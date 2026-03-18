@@ -276,33 +276,29 @@
     gap: 60px;
     align-items: center;
   }
-  .goal-left { flex: 1; }
-  .goal-right { flex: 1; }
-  .metric-row {
-    display: flex;
-    gap: 24px;
-    margin-top: 36px;
-  }
-  .metric-card {
-    flex: 1;
+  .goal-left { flex: 1.1; }
+  .goal-right { flex: 0.9; display: flex; align-items: center; justify-content: center; }
+  .metric-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 32px;
+    padding: 12px 24px;
     background: var(--bg-card);
     border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 16px;
-    padding: 24px;
-    text-align: center;
+    border-radius: 40px;
   }
-  .metric-value {
-    font-size: 40px;
+  .metric-inline-value {
+    font-size: 28px;
     font-weight: 800;
     background: var(--gradient-accent);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
-    line-height: 1.1;
+    line-height: 1;
   }
-  .metric-label {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 6px;
+  .metric-inline-text {
+    font-size: 13px;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 1px;
     font-weight: 500;
@@ -320,41 +316,59 @@
     position: relative;
     overflow: hidden;
   }
-  .orbit-ring {
-    position: absolute;
-    border: 1px solid rgba(232, 119, 95, 0.15);
-    border-radius: 50%;
+  .loop-diagram {
+    position: relative;
+    width: 260px;
+    height: 260px;
   }
-  .orbit-ring:nth-child(1) { width: 120px; height: 120px; }
-  .orbit-ring:nth-child(2) { width: 200px; height: 200px; }
-  .orbit-ring:nth-child(3) { width: 280px; height: 280px; }
-  .orbit-center {
-    width: 56px; height: 56px;
-    background: var(--gradient-accent);
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 22px;
+  .loop-arrows {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+  .loop-node {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
     z-index: 2;
-    box-shadow: 0 0 60px var(--accent-glow);
   }
-  .orbit-node {
-    position: absolute;
-    width: 40px; height: 40px;
-    border-radius: 12px;
+  .loop-icon {
+    width: 44px; height: 44px;
     background: var(--bg-card-light);
     border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
     display: flex; align-items: center; justify-content: center;
     font-size: 18px;
-    z-index: 2;
+    color: var(--text-primary);
   }
-  .orbit-node:nth-child(5) { top: 20px; left: 50%; transform: translateX(-50%); }
-  .orbit-node:nth-child(6) { bottom: 40px; right: 30px; }
-  .orbit-node:nth-child(7) { bottom: 40px; left: 30px; }
+  .loop-text {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    letter-spacing: 0.5px;
+  }
+  .loop-top    { top: -8px;  left: 50%; transform: translateX(-50%); }
+  .loop-right  { right: -16px; top: 50%; transform: translateY(-50%); }
+  .loop-bottom { bottom: -8px; left: 50%; transform: translateX(-50%); }
+  .loop-left   { left: -16px;  top: 50%; transform: translateY(-50%); }
+  .loop-center-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.4;
+    color: var(--text-muted);
+  }
 
   /* ── SLIDE 3: Pain Points ── */
   .pain-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 20px;
     width: 100%;
     max-width: 1000px;
@@ -642,7 +656,7 @@
 <section class="slide active" data-slide="0">
   <div class="cover-content">
     <div class="stagger logo-mark float"><img src="../onbeat_logo.png" alt="OnBeat Logo"></div>
-    <div class="stagger label">Internal Demo</div>
+    <div class="stagger label">Optimize workflow with AI</div>
     <h1 class="stagger title-xl">
       Roundtrip<br><span class="gradient-text">Workflow</span>
     </h1>
@@ -665,31 +679,49 @@
     <div class="goal-left">
       <div class="stagger label">The Goal</div>
       <h2 class="stagger title-lg">
-        Shorten the<br><span class="gradient-text">design &harr; dev</span><br>workflow
+        See the <span class="gradient-text">full flow</span>,<br>keep design &amp; code<br><span class="gradient-text">in sync</span>
       </h2>
       <p class="stagger subtitle" style="margin-top: 16px;">
-        Let anyone on the team build features with AI, while designers still control how everything looks &mdash; no more waiting around.
+        After AI builds a feature, automatically capture every screen into Figma &mdash; so designers can see the whole flow and iterate without starting over.
       </p>
-      <div class="stagger metric-row">
-        <div class="metric-card">
-          <div class="metric-value">10&times;</div>
-          <div class="metric-label">Faster Iteration</div>
-        </div>
-        <div class="metric-card">
-          <div class="metric-value">1</div>
-          <div class="metric-label">Unified Loop</div>
-        </div>
+      <div class="stagger metric-inline">
+        <span class="metric-inline-value">1</span>
+        <span class="metric-inline-text">Unified Loop</span>
       </div>
     </div>
     <div class="goal-right stagger">
       <div class="goal-visual">
-        <div class="orbit-ring"></div>
-        <div class="orbit-ring"></div>
-        <div class="orbit-ring"></div>
-        <div class="orbit-center float">&#9889;</div>
-        <div class="orbit-node float" style="animation-delay: 0.5s;">&#128187;</div>
-        <div class="orbit-node float" style="animation-delay: 1s;">&#127912;</div>
-        <div class="orbit-node float" style="animation-delay: 1.5s;">&#128640;</div>
+        <div class="loop-diagram">
+          <svg class="loop-arrows" viewBox="0 0 260 260" fill="none">
+            <path d="M130 30 A100 100 0 0 1 230 130" stroke="url(#loopGrad)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+            <path d="M230 130 A100 100 0 0 1 130 230" stroke="url(#loopGrad)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+            <path d="M130 230 A100 100 0 0 1 30 130" stroke="url(#loopGrad)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+            <path d="M30 130 A100 100 0 0 1 130 30" stroke="url(#loopGrad)" stroke-width="2" stroke-dasharray="6 4" fill="none"/>
+            <!-- arrowheads -->
+            <polygon points="225,118 235,130 220,130" fill="var(--accent)" opacity="0.7"/>
+            <polygon points="142,225 130,235 130,220" fill="var(--accent)" opacity="0.7"/>
+            <polygon points="35,142 25,130 40,130" fill="var(--accent)" opacity="0.7"/>
+            <polygon points="118,35 130,25 130,40" fill="var(--accent)" opacity="0.7"/>
+            <defs><linearGradient id="loopGrad" x1="0" y1="0" x2="260" y2="260"><stop offset="0%" stop-color="#E8775F"/><stop offset="100%" stop-color="#F4A261"/></linearGradient></defs>
+          </svg>
+          <div class="loop-node loop-top">
+            <span class="loop-icon">&#x2728;</span>
+            <span class="loop-text">AI Build</span>
+          </div>
+          <div class="loop-node loop-right">
+            <span class="loop-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+            <span class="loop-text">Figma</span>
+          </div>
+          <div class="loop-node loop-bottom">
+            <span class="loop-icon">&#x270F;&#xFE0F;</span>
+            <span class="loop-text">Tweak</span>
+          </div>
+          <div class="loop-node loop-left">
+            <span class="loop-icon">&#x1F504;</span>
+            <span class="loop-text">Sync</span>
+          </div>
+          <div class="loop-center-label">Design<br>&harr;<br>Code</div>
+        </div>
       </div>
     </div>
   </div>
@@ -701,26 +733,21 @@
 <section class="slide" data-slide="2">
   <div class="stagger label">The Problem</div>
   <h2 class="stagger title-lg" style="text-align:center; margin-bottom: 4px;">
-    Why the old way <span class="gradient-text">doesn't work</span>
+    AI builds fast, but <span class="gradient-text">you lose the big picture</span>
   </h2>
   <p class="stagger subtitle" style="text-align:center; margin-bottom: 12px;">
-    Passing work between designers and developers is slow and messy.
+    When you vibe-code with AI, you get a working prototype &mdash; but you can&rsquo;t see the full UI flow or all the edge cases. To bring it back into design, you either start from scratch or copy screens one by one. That&rsquo;s slow and painful.
   </p>
   <div class="pain-grid">
     <div class="pain-card stagger">
-      <div class="pain-icon">&#128256;</div>
-      <div class="pain-title">Design &ne; Code</div>
-      <div class="pain-desc">The design file and the actual app are separate. When you change one, the other doesn't update.</div>
+      <div class="pain-icon">&#x1F441;&#xFE0F;</div>
+      <div class="pain-title">You only see one screen at a time</div>
+      <div class="pain-desc">AI gives you a working prototype, but there&rsquo;s no way to see the whole flow &mdash; all the screens, states, and conditions &mdash; in one place.</div>
     </div>
     <div class="pain-card stagger">
-      <div class="pain-icon">&#128012;</div>
-      <div class="pain-title">Too Much Waiting</div>
-      <div class="pain-desc">Designers wait for developers. Developers wait for designers. Everyone's stuck waiting instead of building.</div>
-    </div>
-    <div class="pain-card stagger">
-      <div class="pain-icon">&#128679;</div>
-      <div class="pain-title">Which Version Is Right?</div>
-      <div class="pain-desc">After AI builds new features, the app looks different from the design file. Nobody knows which one is the &ldquo;real&rdquo; version.</div>
+      <div class="pain-icon">&#x1F9E9;</div>
+      <div class="pain-title">Syncing back to design is manual</div>
+      <div class="pain-desc">Designers have to recreate the design file from scratch, or copy each screen from Figma Make one by one. Neither option is fast.</div>
     </div>
   </div>
 </section>
@@ -871,16 +898,17 @@
 
     const direction = index > current ? 1 : -1;
     slides[current].classList.remove('active');
-    slides[current].classList.add(direction > 0 ? 'exit-up' : '');
+    if (direction > 0) slides[current].classList.add('exit-up');
 
     setTimeout(() => {
       slides[current].classList.remove('exit-up');
+      current = index;
+      // Reset stagger animations on the NEW slide so they replay
       slides[current].querySelectorAll('.stagger').forEach(el => {
         el.style.animation = 'none';
         el.offsetHeight;
         el.style.animation = '';
       });
-      current = index;
       slides[current].classList.add('active');
       currentEl.textContent = String(current + 1).padStart(2, '0');
       progress.style.width = ((current + 1) / total * 100) + '%';
