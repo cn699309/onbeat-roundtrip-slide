@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OnBeat ‚Äî Roundtrip Workflow</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-dark: #0D0D0D;
+    --bg-card: #1A1A1A;
+    --bg-card-light: #242424;
+    --accent: #E8775F;
+    --accent-glow: rgba(232, 119, 95, 0.3);
+    --accent-soft: rgba(232, 119, 95, 0.12);
+    --text-primary: #FFFFFF;
+    --text-secondary: rgba(255,255,255,0.6);
+    --text-muted: rgba(255,255,255,0.35);
+    --gradient-accent: linear-gradient(135deg, #E8775F 0%, #F4A261 100%);
+    --gradient-bg: linear-gradient(180deg, #0D0D0D 0%, #1A1008 100%);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Poppins', sans-serif;
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    overflow: hidden;
+    height: 100vh;
+    width: 100vw;
+    user-select: none;
+  }
+
+  /* ‚îÄ‚îÄ Slide Container ‚îÄ‚îÄ */
+  .slides-wrapper {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 40px 60px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(30px);
+    pointer-events: none;
+    transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1), visibility 0s 0.7s;
+  }
+  .slide.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+    transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1), visibility 0s 0s;
+  }
+  .slide.exit-up {
+    opacity: 0;
+    visibility: visible;
+    transform: translateY(-40px);
+  }
+
+  /* ‚îÄ‚îÄ Ambient glow ‚îÄ‚îÄ */
+  .ambient-glow {
+    position: fixed;
+    width: 600px; height: 600px;
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+  .glow-1 { top: -200px; right: -100px; }
+  .glow-2 { bottom: -250px; left: -150px; opacity: 0.2; }
+
+  /* ‚îÄ‚îÄ Progress Bar ‚îÄ‚îÄ */
+  .progress-bar {
+    position: fixed;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: var(--gradient-accent);
+    z-index: 100;
+    transition: width 0.5s cubic-bezier(.4,0,.2,1);
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+
+  /* ‚îÄ‚îÄ Slide Counter ‚îÄ‚îÄ */
+  .slide-counter {
+    position: fixed;
+    bottom: 24px; right: 40px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    z-index: 100;
+    letter-spacing: 2px;
+  }
+  .slide-counter .current { color: var(--accent); font-weight: 700; }
+
+  /* ‚îÄ‚îÄ Nav Dots ‚îÄ‚îÄ */
+  .nav-dots {
+    position: fixed;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+  }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.15);
+    cursor: pointer;
+    transition: all 0.3s;
+    border: none;
+    outline: none;
+  }
+  .nav-dot.active {
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+    transform: scale(1.3);
+  }
+
+  /* ‚îÄ‚îÄ Typography ‚îÄ‚îÄ */
+  .label {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+  .title-xl {
+    font-size: clamp(48px, 6vw, 80px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -2px;
+  }
+  .title-lg {
+    font-size: clamp(28px, 3.5vw, 48px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -1.5px;
+  }
+  .title-md {
+    font-size: clamp(24px, 2.5vw, 36px);
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .subtitle {
+    font-size: clamp(16px, 1.5vw, 20px);
+    font-weight: 300;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: 640px;
+  }
+  .accent-text { color: var(--accent); }
+  .gradient-text {
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* ‚îÄ‚îÄ Animations ‚îÄ‚îÄ */
+  .stagger { opacity: 0; transform: translateY(20px); }
+  .slide.active .stagger {
+    animation: fadeUp 0.6s cubic-bezier(.4,0,.2,1) forwards;
+  }
+  .slide.active .stagger:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .stagger:nth-child(2) { animation-delay: 0.2s; }
+  .slide.active .stagger:nth-child(3) { animation-delay: 0.35s; }
+  .slide.active .stagger:nth-child(4) { animation-delay: 0.5s; }
+  .slide.active .stagger:nth-child(5) { animation-delay: 0.65s; }
+  .slide.active .stagger:nth-child(6) { animation-delay: 0.8s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes scaleIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(40px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes drawLine {
+    from { stroke-dashoffset: 200; }
+    to { stroke-dashoffset: 0; }
+  }
+
+  .float { animation: float 3s ease-in-out infinite; }
+
+  /* ‚îÄ‚îÄ SLIDE 1: Cover ‚îÄ‚îÄ */
+  .cover-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+  .logo-mark {
+    width: 72px; height: 72px;
+    background: var(--gradient-accent);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 32px; font-weight: 800;
+    margin-bottom: 8px;
+    box-shadow: 0 8px 40px var(--accent-glow);
+  }
+  .cover-divider {
+    width: 60px; height: 2px;
+    background: var(--gradient-accent);
+    border-radius: 2px;
+  }
+  .team-badges {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .badge {
+    padding: 8px 20px;
+    border-radius: 100px;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  /* ‚îÄ‚îÄ SLIDE 2: Goal ‚îÄ‚îÄ */
+  .goal-layout {
+    display: flex;
+    width: 100%;
+    max-width: 1100px;
+    gap: 60px;
+    align-items: center;
+  }
+  .goal-left { flex: 1; }
+  .goal-right { flex: 1; }
+  .metric-row {
+    display: flex;
+    gap: 24px;
+    margin-top: 36px;
+  }
+  .metric-card {
+    flex: 1;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+  }
+  .metric-value {
+    font-size: 40px;
+    font-weight: 800;
+    background: var(--gradient-accent);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+  .metric-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 500;
+  }
+  .goal-visual {
+    width: 100%;
+    max-height: 320px;
+    aspect-ratio: 1;
+    background: var(--bg-card);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .orbit-ring {
+    position: absolute;
+    border: 1px solid rgba(232, 119, 95, 0.15);
+    border-radius: 50%;
+  }
+  .orbit-ring:nth-child(1) { width: 120px; height: 120px; }
+  .orbit-ring:nth-child(2) { width: 200px; height: 200px; }
+  .orbit-ring:nth-child(3) { width: 280px; height: 280px; }
+  .orbit-center {
+    width: 56px; height: 56px;
+    background: var(--gradient-accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    z-index: 2;
+    box-shadow: 0 0 60px var(--accent-glow);
+  }
+  .orbit-node {
+    position: absolute;
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    background: var(--bg-card-light);
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    z-index: 2;
+  }
+  .orbit-node:nth-child(5) { top: 20px; left: 50%; transform: translateX(-50%); }
+  .orbit-node:nth-child(6) { bottom: 40px; right: 30px; }
+  .orbit-node:nth-child(7) { bottom: 40px; left: 30px; }
+
+  /* ‚îÄ‚îÄ SLIDE 3: Pain Points ‚îÄ‚îÄ */
+  .pain-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    width: 100%;
+    max-width: 1000px;
+    margin-top: 24px;
+  }
+  .pain-card {
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 24px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.3s, border-color 0.3s;
+  }
+  .pain-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(232, 119, 95, 0.3);
+  }
+  .pain-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--gradient-accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .pain-card:hover::before { opacity: 1; }
+  .pain-icon {
+    width: 48px; height: 48px;
+    border-radius: 14px;
+    background: var(--accent-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+    margin-bottom: 16px;
+  }
+  .pain-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .pain-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* ‚îÄ‚îÄ SLIDE 4: Solution Flow ‚îÄ‚îÄ */
+  .flow-container {
+    width: 100%;
+    max-width: 1100px;
+    margin-top: 36px;
+  }
+  .flow-steps {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    position: relative;
+  }
+  .flow-step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+  }
+  .flow-node {
+    width: 80px; height: 80px;
+    border-radius: 24px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 34px;
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+  .flow-node.code { background: linear-gradient(135deg, #3B82F6 0%, #6366F1 100%); }
+  .flow-node.design { background: linear-gradient(135deg, #E8775F 0%, #F4A261 100%); }
+  .flow-node.iterate { background: linear-gradient(135deg, #10B981 0%, #34D399 100%); }
+  .flow-node.ship { background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%); }
+
+  .flow-label {
+    margin-top: 16px;
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .flow-desc {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+    max-width: 150px;
+    line-height: 1.4;
+  }
+  .flow-arrow {
+    position: absolute;
+    top: 40px;
+    left: calc(50% + 44px);
+    width: calc(100% - 88px);
+    display: flex;
+    align-items: center;
+    z-index: 1;
+  }
+  .flow-arrow-line {
+    flex: 1;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(232,119,95,0.5), rgba(232,119,95,0.1));
+  }
+  .flow-arrow-head {
+    width: 0; height: 0;
+    border-top: 6px solid transparent;
+    border-bottom: 6px solid transparent;
+    border-left: 8px solid rgba(232,119,95,0.5);
+  }
+  .flow-step:last-child .flow-arrow { display: none; }
+
+  .flow-roundtrip {
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+  .roundtrip-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid rgba(232, 119, 95, 0.2);
+    border-radius: 100px;
+    padding: 12px 24px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  .roundtrip-badge .arrow-icon {
+    color: var(--accent);
+    font-size: 16px;
+  }
+
+  /* ‚îÄ‚îÄ SLIDE 5: Demo ‚îÄ‚îÄ */
+  .demo-content {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+  .demo-player {
+    width: min(800px, 80vw);
+    aspect-ratio: 16/9;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .demo-player::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, var(--accent-soft) 0%, transparent 60%);
+  }
+  .play-btn {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    background: var(--gradient-accent);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 2;
+    box-shadow: 0 8px 40px var(--accent-glow);
+    transition: transform 0.3s;
+  }
+  .play-btn:hover { transform: scale(1.1); }
+  .play-btn svg { margin-left: 4px; }
+
+  .demo-hint {
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  /* ‚îÄ‚îÄ Keyboard hint ‚îÄ‚îÄ */
+  .keyboard-hint {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+    z-index: 100;
+    opacity: 0.6;
+  }
+  .key {
+    padding: 3px 8px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 5px;
+    font-size: 11px;
+    background: rgba(255,255,255,0.04);
+    font-family: 'Poppins', sans-serif;
+  }
+
+  /* ‚îÄ‚îÄ Video upload area ‚îÄ‚îÄ */
+  .video-upload-area {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 3;
+    border-radius: 24px;
+    transition: background 0.3s;
+  }
+  .video-upload-area.dragover {
+    background: rgba(232, 119, 95, 0.1);
+    border: 2px dashed var(--accent);
+  }
+  .video-upload-area video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+  }
+  .video-upload-area.has-video .play-btn,
+  .video-upload-area.has-video .upload-label { display: none; }
+  .upload-label {
+    position: absolute;
+    bottom: 20px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* ‚îÄ‚îÄ Responsive ‚îÄ‚îÄ */
+  @media (max-width: 768px) {
+    .slide { padding: 40px 28px; }
+    .goal-layout { flex-direction: column; gap: 30px; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .flow-steps { flex-direction: column; gap: 20px; }
+    .flow-arrow { display: none !important; }
+    .nav-dots { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Ambient glows -->
+<div class="ambient-glow glow-1" style="animation: pulseGlow 4s ease-in-out infinite;"></div>
+<div class="ambient-glow glow-2" style="animation: pulseGlow 5s ease-in-out infinite 1s;"></div>
+
+<!-- Progress Bar -->
+<div class="progress-bar" id="progress"></div>
+
+<!-- Nav Dots -->
+<div class="nav-dots" id="navDots"></div>
+
+<!-- Slide Counter -->
+<div class="slide-counter">
+  <span class="current" id="currentSlide">01</span> / <span id="totalSlides">05</span>
+</div>
+
+<!-- Keyboard Hint -->
+<div class="keyboard-hint">
+  <span class="key">‚Üê</span><span class="key">‚Üí</span> or <span class="key">Space</span> to navigate
+</div>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SLIDE 1 ‚Äî COVER                                 -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<div class="slides-wrapper">
+<section class="slide active" data-slide="0">
+  <div class="cover-content">
+    <div class="stagger logo-mark float">‚ô´</div>
+    <div class="stagger label">OnBeat ¬∑ Internal Demo</div>
+    <h1 class="stagger title-xl">
+      Roundtrip<br><span class="gradient-text">Workflow</span>
+    </h1>
+    <div class="stagger cover-divider"></div>
+    <p class="stagger subtitle">
+      Bridging AI-powered coding and pixel-perfect design ‚Äî a seamless loop between <strong>Claude Code</strong> and <strong>Figma</strong>.
+    </p>
+    <div class="stagger team-badges">
+      <div class="badge"><div class="dot"></div> Patrik</div>
+      <div class="badge"><div class="dot"></div> Tinya</div>
+    </div>
+  </div>
+</section>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SLIDE 2 ‚Äî GOAL                                  -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<section class="slide" data-slide="1">
+  <div class="goal-layout">
+    <div class="goal-left">
+      <div class="stagger label">The Goal</div>
+      <h2 class="stagger title-lg">
+        Shorten the<br><span class="gradient-text">design ‚Üî dev</span><br>workflow
+      </h2>
+      <p class="stagger subtitle" style="margin-top: 16px;">
+        Enable every team member to vibe-code features with Claude Code, while designers keep full control over UI quality ‚Äî in one continuous loop.
+      </p>
+      <div class="stagger metric-row">
+        <div class="metric-card">
+          <div class="metric-value">10√ó</div>
+          <div class="metric-label">Faster Iteration</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">1</div>
+          <div class="metric-label">Unified Loop</div>
+        </div>
+      </div>
+    </div>
+    <div class="goal-right stagger">
+      <div class="goal-visual">
+        <div class="orbit-ring"></div>
+        <div class="orbit-ring"></div>
+        <div class="orbit-ring"></div>
+        <div class="orbit-center float">‚ö°</div>
+        <div class="orbit-node float" style="animation-delay: 0.5s;">üíª</div>
+        <div class="orbit-node float" style="animation-delay: 1s;">üé®</div>
+        <div class="orbit-node float" style="animation-delay: 1.5s;">üöÄ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SLIDE 3 ‚Äî PAIN POINTS                           -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<section class="slide" data-slide="2">
+  <div class="stagger label">The Problem</div>
+  <h2 class="stagger title-lg" style="text-align:center; margin-bottom: 4px;">
+    Why the old way <span class="gradient-text">doesn't work</span>
+  </h2>
+  <p class="stagger subtitle" style="text-align:center; margin-bottom: 12px;">
+    The handoff gap between design and code slows everyone down.
+  </p>
+  <div class="pain-grid">
+    <div class="pain-card stagger">
+      <div class="pain-icon">üîÄ</div>
+      <div class="pain-title">Disconnected Handoff</div>
+      <div class="pain-desc">Design specs live in Figma, but the real UI lives in code. Changes in one don't reflect in the other automatically.</div>
+    </div>
+    <div class="pain-card stagger">
+      <div class="pain-icon">üêå</div>
+      <div class="pain-title">Slow Iteration Cycles</div>
+      <div class="pain-desc">Designers wait for dev builds to review. Devs wait for design redlines. The back-and-forth burns entire sprints.</div>
+    </div>
+    <div class="pain-card stagger">
+      <div class="pain-icon">üöß</div>
+      <div class="pain-title">No Single Source of Truth</div>
+      <div class="pain-desc">After vibe coding, the production UI drifts from the Figma file. Nobody knows which version is "correct."</div>
+    </div>
+  </div>
+</section>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SLIDE 4 ‚Äî SOLUTION FLOW                         -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<section class="slide" data-slide="3">
+  <div class="stagger label">The Solution</div>
+  <h2 class="stagger title-lg" style="text-align:center; margin-bottom: 4px;">
+    The <span class="gradient-text">Roundtrip</span> Workflow
+  </h2>
+  <p class="stagger subtitle" style="text-align:center;">
+    Code ‚Üí Figma ‚Üí Code. A continuous loop that keeps design and dev in sync.
+  </p>
+  <div class="flow-container stagger">
+    <div class="flow-steps">
+      <!-- Step 1 -->
+      <div class="flow-step">
+        <div class="flow-node code">üíª</div>
+        <div class="flow-label">Vibe Code</div>
+        <div class="flow-desc">Anyone builds features with Claude Code in production</div>
+        <div class="flow-arrow">
+          <div class="flow-arrow-line"></div>
+          <div class="flow-arrow-head"></div>
+        </div>
+      </div>
+      <!-- Step 2 -->
+      <div class="flow-step">
+        <div class="flow-node design">üé®</div>
+        <div class="flow-label">Pull to Figma</div>
+        <div class="flow-desc">Snapshot real UI flows into Figma for design review</div>
+        <div class="flow-arrow">
+          <div class="flow-arrow-line"></div>
+          <div class="flow-arrow-head"></div>
+        </div>
+      </div>
+      <!-- Step 3 -->
+      <div class="flow-step">
+        <div class="flow-node iterate">‚úèÔ∏è</div>
+        <div class="flow-label">Design Iterate</div>
+        <div class="flow-desc">Designers refine UI details and flow in Figma</div>
+        <div class="flow-arrow">
+          <div class="flow-arrow-line"></div>
+          <div class="flow-arrow-head"></div>
+        </div>
+      </div>
+      <!-- Step 4 -->
+      <div class="flow-step">
+        <div class="flow-node ship">üöÄ</div>
+        <div class="flow-label">Push to Code</div>
+        <div class="flow-desc">Apply Figma changes back to the production codebase</div>
+      </div>
+    </div>
+
+    <div class="flow-roundtrip" style="margin-top: 32px;">
+      <div class="roundtrip-badge">
+        <span>üîÑ</span>
+        <span>Continuous roundtrip ‚Äî repeat until perfect</span>
+        <span class="arrow-icon">‚Üí</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SLIDE 5 ‚Äî DEMO                                  -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<section class="slide" data-slide="4">
+  <div class="demo-content">
+    <div class="stagger label">Live Demo</div>
+    <h2 class="stagger title-lg">
+      See it in <span class="gradient-text">action</span>
+    </h2>
+    <div class="stagger demo-player" id="demoPlayer">
+      <div class="video-upload-area" id="videoUpload">
+        <div class="play-btn">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="white">
+            <polygon points="5,3 19,12 5,21" />
+          </svg>
+        </div>
+        <div class="upload-label">Drop a video here or click to upload</div>
+      </div>
+    </div>
+    <p class="stagger demo-hint">üé¨ Video will be uploaded after the demo session</p>
+  </div>
+</section>
+</div>
+
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<!-- SCRIPT                                          -->
+<!-- ‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê‚ïê -->
+<script>
+(function () {
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  const progress = document.getElementById('progress');
+  const currentEl = document.getElementById('currentSlide');
+  const totalEl = document.getElementById('totalSlides');
+  const dotsContainer = document.getElementById('navDots');
+  let current = 0;
+  let isAnimating = false;
+
+  totalEl.textContent = String(total).padStart(2, '0');
+
+  // Create nav dots
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+    dot.addEventListener('click', () => goTo(i));
+    dotsContainer.appendChild(dot);
+  }
+  const dots = dotsContainer.querySelectorAll('.nav-dot');
+
+  function goTo(index) {
+    if (isAnimating || index === current || index < 0 || index >= total) return;
+    isAnimating = true;
+
+    const direction = index > current ? 1 : -1;
+    slides[current].classList.remove('active');
+    slides[current].classList.add(direction > 0 ? 'exit-up' : '');
+
+    setTimeout(() => {
+      slides[current].classList.remove('exit-up');
+      slides[current].querySelectorAll('.stagger').forEach(el => {
+        el.style.animation = 'none';
+        el.offsetHeight;
+        el.style.animation = '';
+      });
+      current = index;
+      slides[current].classList.add('active');
+      currentEl.textContent = String(current + 1).padStart(2, '0');
+      progress.style.width = ((current + 1) / total * 100) + '%';
+      dots.forEach((d, i) => d.classList.toggle('active', i === current));
+      setTimeout(() => { isAnimating = false; }, 400);
+    }, 350);
+  }
+
+  // Keyboard nav
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      goTo(current - 1);
+    }
+  });
+
+  // Touch nav
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 60) goTo(current + (diff > 0 ? 1 : -1));
+  });
+
+  // Video upload
+  const videoUpload = document.getElementById('videoUpload');
+  const demoPlayer = document.getElementById('demoPlayer');
+
+  videoUpload.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    videoUpload.classList.add('dragover');
+  });
+  videoUpload.addEventListener('dragleave', () => {
+    videoUpload.classList.remove('dragover');
+  });
+  videoUpload.addEventListener('drop', (e) => {
+    e.preventDefault();
+    videoUpload.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('video/')) {
+      loadVideo(file);
+    }
+  });
+  videoUpload.addEventListener('click', () => {
+    if (videoUpload.classList.contains('has-video')) return;
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'video/*';
+    input.onchange = (e) => {
+      if (e.target.files[0]) loadVideo(e.target.files[0]);
+    };
+    input.click();
+  });
+
+  function loadVideo(file) {
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.src = url;
+    video.controls = true;
+    video.autoplay = false;
+    videoUpload.innerHTML = '';
+    videoUpload.appendChild(video);
+    videoUpload.classList.add('has-video');
+  }
+
+  // Init progress
+  progress.style.width = (1 / total * 100) + '%';
+})();
+</script>
+</body>
+</html>
